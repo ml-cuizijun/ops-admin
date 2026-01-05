@@ -82,7 +82,7 @@ func getDashboardStats(c *gin.Context) {
 		"code": 0,
 		"msg":  "success",
 		"data": gin.H{
-			"serverCount": 1280,
+			"serverCount": 12800,
 			"k8sCluster":  150,
 			"alertCount":  230,
 			"deployToday": 560,
