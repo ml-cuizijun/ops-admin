@@ -271,6 +271,10 @@ func main() {
 
 		// DELETE /api/servers/:id - 删除服务器
 		api.DELETE("/servers/:id", deleteServer)
+
+		// POST /api/servers/batch-delete - 批量删除服务器
+		// 请求体：{ "ids": [1, 2, 3] }
+		api.POST("/servers/batch-delete", batchDeleteServer)
 	}
 
 	/*
@@ -506,4 +510,56 @@ func deleteServer(c *gin.Context) {
 	}
 
 	response(c, 0, "删除成功", nil)
+}
+
+/*
+ * batchDeleteServer: 批量删除服务器
+ *
+ * 请求：POST /api/servers/batch-delete
+ * 请求体：{ "ids": [1, 2, 3] }
+ * 响应：成功删除的数量
+ */
+func batchDeleteServer(c *gin.Context) {
+	/*
+	 * 定义请求体结构
+	 *
+	 * 匿名结构体：只在这个函数内使用，不需要单独定义类型
+	 * IDs []uint: 整数数组，存储要删除的 ID 列表
+	 * json:"ids": 对应前端传来的 { ids: [1,2,3] }
+	 */
+	var req struct {
+		IDs []uint `json:"ids"`
+	}
+
+	// 解析请求体
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response(c, 1, "参数错误: "+err.Error(), nil)
+		return
+	}
+
+	// 验证：ID 列表不能为空
+	if len(req.IDs) == 0 {
+		response(c, 1, "请选择要删除的服务器", nil)
+		return
+	}
+
+	/*
+	 * 批量删除
+	 *
+	 * db.Delete(&Server{}, req.IDs) 相当于:
+	 * DELETE FROM servers WHERE id IN (1, 2, 3)
+	 *
+	 * GORM 支持传入切片作为条件，自动生成 IN 查询
+	 */
+	result := db.Delete(&Server{}, req.IDs)
+
+	if result.Error != nil {
+		response(c, 1, "删除失败: "+result.Error.Error(), nil)
+		return
+	}
+
+	// 返回实际删除的数量
+	response(c, 0, "删除成功", gin.H{
+		"deleted": result.RowsAffected,
+	})
 }

@@ -70,6 +70,19 @@
             />
             <el-button type="primary" icon="Search" @click="handleSearch">搜索</el-button>
             <el-button icon="Refresh" @click="fetchList(true)" :loading="loading">刷新</el-button>
+            <!-- 
+              批量删除按钮
+              :disabled: 没有选中时禁用
+              selectedRows.length: 选中的行数
+            -->
+            <el-button 
+              type="danger" 
+              icon="Delete" 
+              :disabled="selectedRows.length === 0"
+              @click="handleBatchDelete"
+            >
+              批量删除 {{ selectedRows.length > 0 ? `(${selectedRows.length})` : '' }}
+            </el-button>
             <el-button type="primary" icon="Plus" @click="handleAdd">
               添加服务器
             </el-button>
@@ -86,7 +99,20 @@
         stripe: 斑马纹（隔行变色）
         border: 显示边框
       -->
-      <el-table :data="filteredList" v-loading="loading" stripe border>
+      <el-table 
+        :data="filteredList" 
+        v-loading="loading" 
+        stripe 
+        border
+        @selection-change="handleSelectionChange"
+      >
+        
+        <!-- 
+          多选列
+          type="selection": 显示复选框
+          用户勾选时会触发 @selection-change 事件
+        -->
+        <el-table-column type="selection" width="55" />
         
         <!-- 
           el-table-column: 表格列
@@ -264,7 +290,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 // 导入 API 函数
-import { getServerList, createServer, updateServer, deleteServer } from '@/api/server'
+import { getServerList, createServer, updateServer, deleteServer, batchDeleteServer } from '@/api/server'
 
 // ==================== 响应式数据定义 ====================
 
@@ -288,6 +314,9 @@ const serverList = ref([])
 
 // 过滤后的列表（用于显示）
 const filteredList = ref([])
+
+// 选中的行（批量操作）
+const selectedRows = ref([])
 
 // 弹窗显示状态
 const dialogVisible = ref(false)
@@ -499,6 +528,54 @@ async function handleDelete(row) {
     // 用户点击取消，error 值是 'cancel'，不需要处理
     if (error !== 'cancel') {
       console.error('删除失败:', error)
+    }
+  }
+}
+
+/**
+ * 表格选择变化事件
+ * 
+ * @param selection - 当前选中的所有行数据数组
+ * 每次勾选/取消勾选都会触发，传入最新的选中项
+ */
+function handleSelectionChange(selection) {
+  selectedRows.value = selection
+}
+
+/**
+ * 批量删除
+ * 
+ * 删除所有选中的服务器
+ */
+async function handleBatchDelete() {
+  // 没有选中项，不执行
+  if (selectedRows.value.length === 0) {
+    ElMessage.warning('请先选择要删除的服务器')
+    return
+  }
+  
+  try {
+    // 显示确认框
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedRows.value.length} 台服务器吗？`,
+      '批量删除确认',
+      { type: 'warning' }
+    )
+    
+    // 提取所有选中行的 ID
+    // map() 遍历数组，返回每个元素的 id，组成新数组
+    const ids = selectedRows.value.map(row => row.id)
+    
+    // 调用批量删除 API
+    await batchDeleteServer(ids)
+    
+    ElMessage.success(`成功删除 ${ids.length} 台服务器`)
+    selectedRows.value = []  // 清空选中项
+    fetchList()  // 刷新列表
+    
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('批量删除失败:', error)
     }
   }
 }

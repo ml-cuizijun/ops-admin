@@ -132,3 +132,22 @@ export function deleteServer(id) {
   // RESTful 规范：DELETE 用于删除资源
   return request.delete(`/servers/${id}`)
 }
+
+/**
+ * 批量删除服务器
+ *
+ * @param {Array<number>} ids - 要删除的服务器 ID 数组
+ * @returns {Promise} - 返回删除结果
+ *
+ * 使用示例：
+ * await batchDeleteServer([1, 2, 3])
+ *
+ * 对应后端接口：
+ * DELETE /api/servers/batch
+ * 请求体：{ ids: [1, 2, 3] }
+ */
+export function batchDeleteServer(ids) {
+  // 批量删除使用 POST 或 DELETE + body
+  // 这里用 POST 更通用，因为有些服务器不支持 DELETE 带 body
+  return request.post('/servers/batch-delete', { ids })
+}

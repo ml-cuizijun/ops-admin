@@ -140,6 +140,8 @@
           
         </template>
       </el-menu>
+
+
     </el-aside>
     
     <!-- 
@@ -221,7 +223,7 @@
               <el-dropdown-menu>
                 <el-dropdown-item icon="User">个人中心</el-dropdown-item>
                 <el-dropdown-item icon="Setting">系统设置</el-dropdown-item>
-                <el-dropdown-item divided icon="SwitchButton">退出登录</el-dropdown-item>
+                <el-dropdown-item divided icon="SwitchButton" @click="handleLogout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -370,6 +372,10 @@ const getMenuIndex = (parentPath, childPath) => {
 // 调试：菜单点击事件
 const handleMenuSelect = (index) => {
   console.log('菜单点击:', index)
+}
+
+function handleLogout() {
+  router.push('/server/monitor')
 }
 </script>
 
